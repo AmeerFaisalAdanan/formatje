@@ -49,8 +49,8 @@ App runs at http://localhost:3000
 
 ### Docker Development
 ```bash
-docker-compose -f docker/docker-compose.yml up --build
-docker-compose -f docker/docker-compose.yml down
+docker-compose -f docker-compose.dev.yml up --build
+docker-compose -f docker-compose.dev.yml down
 ```
 
 ### Production Build
@@ -60,8 +60,10 @@ npm run build
 
 ### Docker Production
 ```bash
-docker build -f docker/Dockerfile -t formatje .
+docker build -t formatje .
 docker run -p 80:80 formatje
+# OR
+docker-compose up --build
 ```
 App runs at http://localhost
 
