@@ -1,0 +1,19 @@
+# .dockerignore
+# Prevent sensitive and unnecessary files from being sent to the Docker build context
+.git
+.github
+.gitignore
+node_modules
+dist
+*.log
+*.md
+Dockerfile*
+docker-compose*.yml
+.env
+.env.*
+tests
+__tests__
+coverage
+.vscode
+.idea
+*.swp
