@@ -1,0 +1,156 @@
+# Robust GitHub Actions Workflow for Secure Containerized React App
+#
+# This workflow enforces quality, security, and supply chain integrity for a React app.
+#
+# Triggers: On push/pull_request to all branches except master.
+# Jobs:
+#   1. Quality & Linting
+#   2. Containerization & Security
+#   3. Secret Scanning
+
+name: Secure CI Pipeline
+
+on:
+  push:
+    branches-ignore:
+      - master
+  pull_request:
+    branches-ignore:
+      - master
+
+jobs:
+  quality-linting:
+    name: Quality & Linting
+    runs-on: ubuntu-latest
+    outputs:
+      lint-status: ${{ steps.lint.outcome }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          if [ -f yarn.lock ]; then
+            yarn install --frozen-lockfile
+          else
+            npm ci
+          fi
+
+      - name: Run ESLint
+        id: lint
+        run: |
+          npx eslint src/ || exit 1
+
+      - name: Run Prettier
+        run: |
+          npx prettier --check "src/**/*.{js,jsx,ts,tsx}" || exit 1
+
+      - name: Run Unit Tests with Coverage
+        run: |
+          if [ -f package.json ]; then
+            npx jest --coverage || exit 1
+          fi
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+
+      - name: Summarize Results
+        run: |
+          echo "## Linting and Testing Results" >> $GITHUB_STEP_SUMMARY
+          if [ -f coverage/lcov-report/index.html ]; then
+            echo "Coverage report generated." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  container-security:
+    name: Containerization & Security
+    needs: quality-linting
+    if: needs.quality-linting.result == 'success'
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: react-app
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: SCA Scan (Trivy)
+        uses: aquasecurity/trivy-action@v0.14.0
+        with:
+          scan-type: fs
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
+          format: table
+          output: trivy-sca.txt
+
+      - name: SAST Scan (CodeQL)
+        uses: github/codeql-action/init@v2
+        with:
+          languages: javascript
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+      - name: SAST Scan (Semgrep)
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: owasp-top-ten
+
+      - name: Lint Dockerfile (Hadolint)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+
+      - name: Build Docker Image
+        run: |
+          docker build -f Dockerfile -t $IMAGE_NAME:${{ github.sha }} .
+
+      - name: Scan Built Image (Trivy)
+        uses: aquasecurity/trivy-action@v0.14.0
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
+          format: table
+          output: trivy-image.txt
+
+      - name: Fail on High/Critical Vulns
+        run: |
+          if grep -qE 'HIGH|CRITICAL' trivy-image.txt; then
+            echo "High or Critical vulnerabilities found!" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Summarize Security Results
+        run: |
+          echo "## Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          cat trivy-sca.txt >> $GITHUB_STEP_SUMMARY
+          cat trivy-image.txt >> $GITHUB_STEP_SUMMARY
+
+  secret-scanning:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          config-path: .gitleaks.toml
+          fail: true
+
+      - name: Summarize Secret Scan
+        run: |
+          echo "## Secret Scan Results" >> $GITHUB_STEP_SUMMARY
+          if [ -f gitleaks-report.json ]; then
+            cat gitleaks-report.json >> $GITHUB_STEP_SUMMARY
+          fi
