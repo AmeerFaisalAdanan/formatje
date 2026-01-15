@@ -1,6 +1,6 @@
 # formatje
 
-A modern, client-side web application for formatting and comparing JSON, XML, and GraphQL with a beautiful, responsive interface.
+A modern, client-side web app that formats and compares JSON, XML, and GraphQL through a clean, responsive interface. Built with React, with assistance from Copilot as a learning tool to help me understand and practice React development.
 
 ## ✨ Features
 
