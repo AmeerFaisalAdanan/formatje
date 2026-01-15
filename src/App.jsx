@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FormatterSection } from './components/FormatterSection';
 import { CompareSection } from './components/CompareSection';
+import { JsonToCurlSection } from './components/JsonToCurlSection';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('formatter');
@@ -10,7 +11,7 @@ export default function App() {
       <div className="container mx-auto">
         <header className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white mb-2 drop-shadow-lg">formatje</h1>
-          <p className="text-white/80">Format & compare JSON, XML, and GraphQL</p>
+          <p className="text-white/80">Format, compare, and convert developer tools</p>
         </header>
 
         <div className="tab-nav justify-center">
@@ -26,10 +27,22 @@ export default function App() {
           >
             🔍 Compare
           </button>
+          <button
+            className={`tab-btn ${activeTab === 'curl' ? 'active' : ''}`}
+            onClick={() => setActiveTab('curl')}
+          >
+            🌀 JSON to cURL
+          </button>
         </div>
 
         <div className="max-w-4xl mx-auto">
-          {activeTab === 'formatter' ? <FormatterSection /> : <CompareSection />}
+          {activeTab === 'formatter' ? (
+            <FormatterSection />
+          ) : activeTab === 'compare' ? (
+            <CompareSection />
+          ) : (
+            <JsonToCurlSection />
+          )}
         </div>
       </div>
     </div>
