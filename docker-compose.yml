@@ -1,9 +1,41 @@
-version: '3.8'
 services:
-  formatje-prod:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  formatje:
+    image: ghcr.io/ameerfaisaladanan/formatje:latest
     ports:
-      - "8880:80"
+      - "9111:8080"
     restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    # Security Options (OWASP Best Practices)
+    cap_drop:
+      - ALL
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    # Temporary mounts for nginx to write logs and temp files
+    tmpfs:
+      - /tmp
+      - /var/run
+      - /var/cache/nginx
+    # Resource Limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    # Health Check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    # Logging
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
