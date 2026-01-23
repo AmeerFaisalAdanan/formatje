@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FormatterSection } from './components/FormatterSection';
 import { CompareSection } from './components/CompareSection';
 import { JsonToCurlSection } from './components/JsonToCurlSection';
+import HashGenerator from './components/HashGenerator';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('formatter');
@@ -33,6 +34,12 @@ export default function App() {
           >
             🌀 JSON to cURL
           </button>
+          <button
+            className={`tab-btn ${activeTab === 'hash' ? 'active' : ''}`}
+            onClick={() => setActiveTab('hash')}
+          >
+            🔑 Hash Generator
+          </button>
         </div>
 
         <div className="max-w-4xl mx-auto">
@@ -40,8 +47,10 @@ export default function App() {
             <FormatterSection />
           ) : activeTab === 'compare' ? (
             <CompareSection />
-          ) : (
+          ) : activeTab === 'curl' ? (
             <JsonToCurlSection />
+          ) : (
+            <HashGenerator />
           )}
         </div>
       </div>

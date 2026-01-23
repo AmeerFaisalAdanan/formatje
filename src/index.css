@@ -1,3 +1,22 @@
+/* Input styles */
+.input {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  transition: all 0.2s;
+  font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.875rem;
+  background: #f9fafb;
+  line-height: 1.5;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  background: white;
+}
 :root {
   --background: #f8fafc;
   --foreground: #1e293b;
