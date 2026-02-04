@@ -12,8 +12,8 @@ IMAGE_NAME="ghcr.io/ameerfaisaladanan/formatje"
 VERSION="${1:-latest}"
 FULL_IMAGE_NAME="${IMAGE_NAME}:${VERSION}"
 
-echo "Building Docker image: ${FULL_IMAGE_NAME}"
-docker build -t "${FULL_IMAGE_NAME}" -t "${IMAGE_NAME}:latest" .
+echo "Building Docker image (no cache): ${FULL_IMAGE_NAME}"
+docker build --no-cache -t "${FULL_IMAGE_NAME}" -t "${IMAGE_NAME}:latest" .
 
 echo "Pushing image to GitHub Container Registry..."
 docker push "${FULL_IMAGE_NAME}"
