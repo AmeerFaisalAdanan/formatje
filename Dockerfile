@@ -69,7 +69,7 @@ RUN echo 'server {' > /etc/nginx/conf.d/default.conf && \
     echo '    add_header X-XSS-Protection "1; mode=block" always;' >> /etc/nginx/conf.d/default.conf && \
     echo '    add_header Referrer-Policy "strict-origin-when-cross-origin" always;' >> /etc/nginx/conf.d/default.conf && \
     echo '    add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;' >> /etc/nginx/conf.d/default.conf && \
-    echo '    add_header Content-Security-Policy "default-src '\''self'\''; script-src '\''self'\''; style-src '\''self'\'' '\''unsafe-inline'\''; img-src '\''self'\'' data: https:; font-src '\''self'\''; object-src '\''none'\''; frame-ancestors '\''none'\'';" always;' >> /etc/nginx/conf.d/default.conf && \
+    echo '    add_header Content-Security-Policy "default-src '\''self'\''; script-src '\''self'\'' https://cdn.jsdelivr.net; style-src '\''self'\'' '\''unsafe-inline'\'' https://cdn.jsdelivr.net; img-src '\''self'\'' data: https:; font-src '\''self'\'' https://cdn.jsdelivr.net data:; connect-src '\''self'\'' https://cdn.jsdelivr.net; worker-src blob:; object-src '\''none'\''; frame-ancestors '\''none'\'';" always;' >> /etc/nginx/conf.d/default.conf && \
     echo '    ' >> /etc/nginx/conf.d/default.conf && \
     echo '    # SPA routing' >> /etc/nginx/conf.d/default.conf && \
     echo '    location / {' >> /etc/nginx/conf.d/default.conf && \
