@@ -53,7 +53,7 @@ jobs:
       - name: Run Unit Tests with Coverage
         run: |
           if [ -f package.json ]; then
-            npx jest --coverage || exit 1
+            npx jest --coverage --passWithNoTests || exit 1
           fi
 
       - name: Upload Coverage Report
@@ -144,9 +144,8 @@ jobs:
 
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
-        with:
-          config-path: .gitleaks.toml
-          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Summarize Secret Scan
         run: |

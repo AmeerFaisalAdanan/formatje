@@ -1,10 +1,10 @@
 import * as React from "react";
 
-export function Select({ value, onValueChange, children, className = '' }) {
+export function Select({ value, onValueChange, children, className = "" }) {
   return (
-    <select 
-      value={value} 
-      onChange={e => onValueChange(e.target.value)}
+    <select
+      value={value}
+      onChange={(e) => onValueChange(e.target.value)}
       className={`select ${className}`}
     >
       {children}
