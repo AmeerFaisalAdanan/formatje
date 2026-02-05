@@ -30,6 +30,7 @@ export default [
     },
     rules: {
       ...react.configs.recommended.rules,
+      // React 17+ doesn't require importing React in JSX files
       "react/react-in-jsx-scope": "off",
       "react/prop-types": "off",
     },
