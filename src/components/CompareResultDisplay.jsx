@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
-import { Button } from './ui/button';
-import { Textarea } from './ui/textarea';
-import { CopyToClipboard } from 'react-copy-to-clipboard';
+import React, { useState } from "react";
+import { Textarea } from "./ui/textarea";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 
 export function CompareResultDisplay({ result }) {
   const [copied, setCopied] = useState(false);
@@ -22,7 +21,7 @@ export function CompareResultDisplay({ result }) {
       {result && (
         <CopyToClipboard text={result} onCopy={handleCopy}>
           <button className="copy-btn">
-            {copied ? '✓ Copied!' : '📋 Copy'}
+            {copied ? "✓ Copied!" : "📋 Copy"}
           </button>
         </CopyToClipboard>
       )}

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Select } from './ui/select';
+import React from "react";
+import { Select } from "./ui/select";
 
 export function FormatSelector({ value, onChange }) {
   return (

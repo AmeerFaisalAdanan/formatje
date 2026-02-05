@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
-import Editor from '@monaco-editor/react';
-import { Button } from './ui/button';
-import { CopyToClipboard } from 'react-copy-to-clipboard';
+import React, { useState } from "react";
+import Editor from "@monaco-editor/react";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 
 export function OutputDisplay({ value }) {
   const [copied, setCopied] = useState(false);
@@ -13,17 +12,21 @@ export function OutputDisplay({ value }) {
 
   // Detect language based on content
   const getLanguage = () => {
-    if (!value) return 'plaintext';
+    if (!value) return "plaintext";
     const trimmed = value.trim();
-    if (trimmed.startsWith('{') || trimmed.startsWith('[')) return 'json';
-    if (trimmed.startsWith('<')) return 'xml';
-    if (trimmed.startsWith('query') || trimmed.startsWith('mutation')) return 'graphql';
-    return 'plaintext';
+    if (trimmed.startsWith("{") || trimmed.startsWith("[")) return "json";
+    if (trimmed.startsWith("<")) return "xml";
+    if (trimmed.startsWith("query") || trimmed.startsWith("mutation"))
+      return "graphql";
+    return "plaintext";
   };
 
   return (
     <div className="output-container">
-      <div className="border rounded-lg overflow-hidden bg-white" style={{ height: '400px' }}>
+      <div
+        className="border rounded-lg overflow-hidden bg-white"
+        style={{ height: "400px" }}
+      >
         <Editor
           value={value}
           language={getLanguage()}
@@ -33,17 +36,17 @@ export function OutputDisplay({ value }) {
             minimap: { enabled: false },
             scrollBeyondLastLine: false,
             folding: true,
-            foldingStrategy: 'auto',
+            foldingStrategy: "auto",
             foldingHighlight: true,
-            lineNumbers: 'on',
-            wordWrap: 'on',
+            lineNumbers: "on",
+            wordWrap: "on",
           }}
         />
       </div>
       {value && (
         <CopyToClipboard text={value} onCopy={handleCopy}>
           <button className="copy-btn">
-            {copied ? '✓ Copied!' : '📋 Copy'}
+            {copied ? "✓ Copied!" : "📋 Copy"}
           </button>
         </CopyToClipboard>
       )}

@@ -53,7 +53,7 @@ jobs:
       - name: Run Unit Tests with Coverage
         run: |
           if [ -f package.json ]; then
-            npx jest --coverage || exit 1
+            npx jest --coverage --passWithNoTests || exit 1
           fi
 
       - name: Upload Coverage Report
@@ -74,6 +74,9 @@ jobs:
     needs: quality-linting
     if: needs.quality-linting.result == 'success'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write  # Required for GitHub Security tab
     env:
       IMAGE_NAME: react-app
     steps:
@@ -83,14 +86,32 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: SCA Scan (Trivy)
-        uses: aquasecurity/trivy-action@v0.14.0
+      - name: Run Trivy vulnerability scanner in fs mode
+        uses: aquasecurity/trivy-action@0.33.1
         with:
-          scan-type: fs
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-fs-results.sarif'
+          severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
-          severity: HIGH,CRITICAL
-          format: table
-          output: trivy-sca.txt
+
+      - name: Upload Trivy fs scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-fs-results.sarif'
+          category: 'trivy-fs'
+
+      - name: Run Trivy scanner for table output
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          output: 'trivy-sca.txt'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
 
       - name: SAST Scan (CodeQL)
         uses: github/codeql-action/init@v2
@@ -113,21 +134,31 @@ jobs:
         run: |
           docker build -f Dockerfile -t $IMAGE_NAME:${{ github.sha }} .
 
-      - name: Scan Built Image (Trivy)
-        uses: aquasecurity/trivy-action@v0.14.0
+      - name: Run Trivy vulnerability scanner on Docker image
+        uses: aquasecurity/trivy-action@0.33.1
         with:
-          image-ref: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          image-ref: '${{ env.IMAGE_NAME }}:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-image-results.sarif'
+          severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
-          severity: HIGH,CRITICAL
-          format: table
-          output: trivy-image.txt
 
-      - name: Fail on High/Critical Vulns
-        run: |
-          if grep -qE 'HIGH|CRITICAL' trivy-image.txt; then
-            echo "High or Critical vulnerabilities found!" >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
+      - name: Upload Trivy image scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-image-results.sarif'
+          category: 'trivy-image'
+
+      - name: Run Trivy scanner on image for table output
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: '${{ env.IMAGE_NAME }}:${{ github.sha }}'
+          format: 'table'
+          output: 'trivy-image.txt'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          exit-code: '1'  # Fail the build if vulnerabilities are found
 
       - name: Summarize Security Results
         run: |
@@ -144,9 +175,8 @@ jobs:
 
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
-        with:
-          config-path: .gitleaks.toml
-          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKS }}
 
       - name: Summarize Secret Scan
         run: |

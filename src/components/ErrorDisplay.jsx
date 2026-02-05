@@ -1,5 +1,5 @@
-import React from 'react';
-import { Alert } from './ui/alert';
+import React from "react";
+import { Alert } from "./ui/alert";
 
 export function ErrorDisplay({ error }) {
   if (!error) return null;

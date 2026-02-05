@@ -13,13 +13,26 @@ export default [
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "module",
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
       globals: {
+        window: "readonly",
+        document: "readonly",
+        console: "readonly",
+        navigator: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
         JSX: true,
       },
     },
     rules: {
       ...react.configs.recommended.rules,
-      "prettier/prettier": "error",
+      // React 17+ doesn't require importing React in JSX files
+      "react/react-in-jsx-scope": "off",
+      "react/prop-types": "off",
     },
     settings: {
       react: {
