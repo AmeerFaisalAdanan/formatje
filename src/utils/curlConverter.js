@@ -21,6 +21,19 @@ const escapeShellArg = (str) => {
 };
 
 /**
+ * Validates a URL using URL API
+ * @param {string} urlString - The URL to validate
+ * @throws {Error} If URL is invalid
+ */
+const validateUrl = (urlString) => {
+  try {
+    new URL(urlString);
+  } catch (e) {
+    throw new Error(`Invalid URL: ${e.message}`);
+  }
+};
+
+/**
  * Validates the input JSON structure
  * @param {any} data - The data to validate
  * @throws {Error} If validation fails
@@ -33,6 +46,9 @@ const validateRequestData = (data) => {
   if (!data.url || typeof data.url !== "string") {
     throw new Error("URL is required and must be a string");
   }
+
+  // Validate URL format
+  validateUrl(data.url);
 
   if (data.method && typeof data.method !== "string") {
     throw new Error("Method must be a string");
