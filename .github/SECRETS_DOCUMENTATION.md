@@ -1,117 +1,49 @@
-# Secrets Documentation for GitHub Actions Workflow
+# Secrets Documentation for GitHub Actions Workflows
 
-## Question: Do we need to add new secrets for the repository?
+## Required repository secrets
 
-**Answer: NO - No new secrets need to be added! ✅**
+### `GH_TOKS` (required by secret scanning)
 
-## Current Secret Usage
-
-### Existing Secrets
-The workflow currently uses only ONE secret:
+The Gitleaks job in `secure-ci.yml` authenticates with this repository
+secret:
 
 ```yaml
-# In secret-scanning job (line 179)
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-```
-
-**This is automatically provided by GitHub Actions** - no manual configuration required.
-
-## Analysis of Trivy-Action v0.33.1 Requirements
-
-### What Trivy-Action Uses
-
-1. **No Authentication Required for Basic Scanning**
-   - Trivy-action downloads vulnerability databases from public sources
-   - Filesystem scanning requires no credentials
-   - Local Docker image scanning requires no credentials
-
-2. **Permissions-Based Approach (Recommended)**
-   ```yaml
-   permissions:
-     contents: read          # Read repository code
-     security-events: write  # Upload SARIF to Security tab
-   ```
-   This is the modern, secure approach instead of using secrets.
-
-3. **Automatic Token Usage**
-   - `github/codeql-action/upload-sarif@v3` implicitly uses `GITHUB_TOKEN`
-   - No need to pass it explicitly
-
-### When You WOULD Need Additional Secrets
-
-You would only need to add secrets in these specific scenarios:
-
-#### Scenario 1: Private Docker Registry
-If scanning images from a private registry:
-```yaml
-- name: Run Trivy on private registry
-  uses: aquasecurity/trivy-action@0.33.1
-  with:
-    image-ref: 'private.registry.com/my-app:latest'
+# In the secret-scanning job
+- name: Run Gitleaks
+  uses: gitleaks/gitleaks-action@<pinned-sha> # v2
   env:
-    TRIVY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-    TRIVY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+    GITHUB_TOKEN: ${{ secrets.GH_TOKS }}
 ```
-**Status: Not applicable** - We build images locally
 
-#### Scenario 2: GitHub Enterprise Server (GHES)
-If using GHES with custom GitHub instance:
-```yaml
-- name: Run Trivy with custom token
-  uses: aquasecurity/trivy-action@0.33.1
-  with:
-    scan-type: 'fs'
-    scan-ref: '.'
-    token-setup-trivy: ${{ secrets.GITHUB_PAT }}
-```
-**Status: Not applicable** - We use github.com
+**This secret must exist in the repository settings** (Settings → Secrets
+and variables → Actions). If it is missing, the job runs with an empty
+token and gitleaks-action cannot call the GitHub API.
 
-#### Scenario 3: AWS ECR Private Registry
-If scanning AWS ECR images:
-```yaml
-env:
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  AWS_DEFAULT_REGION: us-west-2
-```
-**Status: Not applicable** - We use local images
+Required scope:
 
-#### Scenario 4: Google Container Registry
-If scanning GCR images:
-```yaml
-env:
-  GOOGLE_APPLICATION_CREDENTIAL: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-```
-**Status: Not applicable** - We use local images
+- A fine-grained PAT with **read access to this repository's contents and
+  metadata** (or a classic PAT with `repo` scope) is sufficient.
+  gitleaks-action uses the token to read repository/PR information when
+  commenting on pull requests.
 
-## Current Workflow Configuration
+## Secrets that are NOT needed
 
-### What We're Doing
-1. ✅ Scanning filesystem (no auth required)
-2. ✅ Building Docker image locally (no auth required)
-3. ✅ Scanning local Docker image (no auth required)
-4. ✅ Uploading SARIF to GitHub Security tab (uses automatic GITHUB_TOKEN)
-5. ✅ Running on github.com (not GHES)
+- **`release.yml` (GHCR publishing) needs no manual secret.** It logs in to
+  `ghcr.io` with the automatic `GITHUB_TOKEN` and the job-level
+  `packages: write` permission. No personal access token is involved.
+- **Trivy, CodeQL, Semgrep, and Hadolint need no secrets.** SARIF uploads
+  to the Security tab use the automatic `GITHUB_TOKEN` via job-level
+  `security-events: write` permissions.
 
-### Security Best Practices Applied
-- ✅ Using job-level permissions instead of global secrets
-- ✅ Minimal permissions principle (`contents: read`, `security-events: write`)
-- ✅ No hardcoded credentials
-- ✅ Automatic token rotation (GITHUB_TOKEN refreshes per workflow run)
+## Security practices applied
 
-## Conclusion
-
-**No action required.** The current workflow is properly configured and does not require any additional secrets to be added to the repository settings.
-
-### Built-in Features Working Without Extra Configuration:
-- ✅ Vulnerability database caching
-- ✅ SARIF upload to GitHub Security tab
-- ✅ Trivy installation via setup-trivy
-- ✅ All scanning operations
+- Least-privilege `permissions:` blocks at workflow and job level
+- Automatic `GITHUB_TOKEN` (rotated per run) wherever possible
+- Third-party actions pinned to full commit SHAs
+- No hardcoded credentials anywhere in the repository
 
 ## References
 
-- [Trivy Action Documentation](https://github.com/aquasecurity/trivy-action)
-- [GitHub Actions Permissions](https://docs.github.com/en/actions/security-guides/automatic-token-authentication)
-- [GitHub Code Scanning](https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github)
+- [GitHub Actions: Automatic token authentication](https://docs.github.com/en/actions/security-guides/automatic-token-authentication)
+- [gitleaks-action](https://github.com/gitleaks/gitleaks-action)
+- [Working with the Container registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)

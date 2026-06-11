@@ -1,29 +1,40 @@
-# Robust GitHub Actions Workflow for Secure Containerized React App
+# Secure CI Pipeline
 #
-# This workflow enforces quality, security, and supply chain integrity for a React app.
+# Enforces quality, security, and supply chain integrity for the app.
 #
-# Triggers: On push/pull_request to all branches except master.
+# Triggers: pull requests targeting master and pushes to master, so the
+# branch that ships is always covered.
 # Jobs:
-#   1. Quality & Linting
-#   2. Containerization & Security
-#   3. Secret Scanning
+#   1. Quality & Linting (eslint, prettier, vitest, build)
+#   2. Containerization & Security (Trivy, CodeQL, Hadolint)
+#   3. Semgrep SAST
+#   4. Secret Scanning (Gitleaks)
+#
+# Third-party actions are pinned to full commit SHAs (supply-chain
+# hardening); GitHub-owned actions/* and github/* stay on major tags.
 
 name: Secure CI Pipeline
 
 on:
   push:
-    branches-ignore:
+    branches:
       - master
   pull_request:
-    branches-ignore:
+    branches:
       - master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   quality-linting:
     name: Quality & Linting
     runs-on: ubuntu-latest
-    outputs:
-      lint-status: ${{ steps.lint.outcome }}
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -31,63 +42,46 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: |
-          if [ -f yarn.lock ]; then
-            yarn install --frozen-lockfile
-          else
-            npm ci
-          fi
+        run: npm ci
 
       - name: Run ESLint
-        id: lint
-        run: |
-          npx eslint src/ || exit 1
+        run: npm run lint
 
-      - name: Run Prettier
-        run: |
-          npx prettier --check "src/**/*.{js,jsx,ts,tsx}" || exit 1
+      - name: Check formatting (Prettier)
+        run: npm run format:check
 
-      - name: Run Unit Tests with Coverage
-        run: |
-          if [ -f package.json ]; then
-            npx jest --coverage --passWithNoTests || exit 1
-          fi
+      - name: Run unit tests (Vitest)
+        run: npm test
 
-      - name: Upload Coverage Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage/
-
-      - name: Summarize Results
-        run: |
-          echo "## Linting and Testing Results" >> $GITHUB_STEP_SUMMARY
-          if [ -f coverage/lcov-report/index.html ]; then
-            echo "Coverage report generated." >> $GITHUB_STEP_SUMMARY
-          fi
+      - name: Build production bundle
+        run: npm run build
 
   container-security:
     name: Containerization & Security
     needs: quality-linting
-    if: needs.quality-linting.result == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       security-events: write  # Required for GitHub Security tab
-    env:
-      IMAGE_NAME: react-app
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: SAST Scan (CodeQL init)
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
 
       - name: Run Trivy vulnerability scanner in fs mode
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -103,45 +97,23 @@ jobs:
           sarif_file: 'trivy-fs-results.sarif'
           category: 'trivy-fs'
 
-      - name: Run Trivy scanner for table output
-        uses: aquasecurity/trivy-action@0.33.1
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'table'
-          output: 'trivy-sca.txt'
-          severity: 'CRITICAL,HIGH'
-          ignore-unfixed: true
-
-      - name: SAST Scan (CodeQL)
-        uses: github/codeql-action/init@v2
-        with:
-          languages: javascript
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-
-      - name: SAST Scan (Semgrep)
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: owasp-top-ten
-
       - name: Lint Dockerfile (Hadolint)
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
         with:
           dockerfile: Dockerfile
 
       - name: Build Docker Image
-        run: |
-          docker build -f Dockerfile -t $IMAGE_NAME:${{ github.sha }} .
+        run: docker build -f Dockerfile -t localbuild/formatje:${{ github.sha }} .
 
       - name: Run Trivy vulnerability scanner on Docker image
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: '${{ env.IMAGE_NAME }}:${{ github.sha }}'
+          image-ref: 'localbuild/formatje:${{ github.sha }}'
           format: 'sarif'
           output: 'trivy-image-results.sarif'
           severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
+          exit-code: '1'  # Fail the build if vulnerabilities are found
 
       - name: Upload Trivy image scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
@@ -150,37 +122,42 @@ jobs:
           sarif_file: 'trivy-image-results.sarif'
           category: 'trivy-image'
 
-      - name: Run Trivy scanner on image for table output
-        uses: aquasecurity/trivy-action@0.33.1
-        with:
-          image-ref: '${{ env.IMAGE_NAME }}:${{ github.sha }}'
-          format: 'table'
-          output: 'trivy-image.txt'
-          severity: 'CRITICAL,HIGH'
-          ignore-unfixed: true
-          exit-code: '1'  # Fail the build if vulnerabilities are found
-
-      - name: Summarize Security Results
-        run: |
-          echo "## Security Scan Results" >> $GITHUB_STEP_SUMMARY
-          cat trivy-sca.txt >> $GITHUB_STEP_SUMMARY
-          cat trivy-image.txt >> $GITHUB_STEP_SUMMARY
-
-  secret-scanning:
-    name: Secret Scanning
+  semgrep:
+    name: Semgrep SAST
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
+    container:
+      image: semgrep/semgrep
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Run Semgrep (OWASP Top Ten)
+        run: semgrep scan --config p/owasp-top-ten --sarif --output semgrep.sarif
+
+      - name: Upload Semgrep results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'semgrep.sarif'
+          category: 'semgrep'
+
+  secret-scanning:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history so gitleaks can scan all commits
+
       - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKS }}
-
-      - name: Summarize Secret Scan
-        run: |
-          echo "## Secret Scan Results" >> $GITHUB_STEP_SUMMARY
-          if [ -f gitleaks-report.json ]; then
-            cat gitleaks-report.json >> $GITHUB_STEP_SUMMARY
-          fi
