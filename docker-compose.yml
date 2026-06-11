@@ -1,11 +1,13 @@
 services:
   formatje:
+    # For reproducible, rollback-able deploys, pin a sha-* or semver tag
+    # published by the release workflow instead of :latest, e.g.
+    #   image: ghcr.io/ameerfaisaladanan/formatje:sha-abc1234
     image: ghcr.io/ameerfaisaladanan/formatje:latest
+    container_name: formatje
     ports:
       - "9111:8080"
     restart: unless-stopped
-    environment:
-      - NODE_ENV=production
     # Security Options (OWASP Best Practices)
     cap_drop:
       - ALL
