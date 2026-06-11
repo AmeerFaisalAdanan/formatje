@@ -1,14 +1,10 @@
-import React, { useState } from "react";
+import React from "react";
 import { Textarea } from "./ui/textarea";
 import { CopyToClipboard } from "react-copy-to-clipboard";
+import { useCopyFeedback } from "../hooks/useCopyFeedback";
 
 export function CompareResultDisplay({ result }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const [copied, handleCopy] = useCopyFeedback();
 
   return (
     <div className="output-container">

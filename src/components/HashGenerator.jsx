@@ -7,7 +7,7 @@ import { Select } from "./ui/select2";
 
 const algorithms = ["md5", "sha1", "sha256", "sha512"];
 
-export default function HashGenerator() {
+export function HashGenerator() {
   const [input, setInput] = useState("");
   const [algorithm, setAlgorithm] = useState("md5");
   const [useHmac, setUseHmac] = useState(false);
@@ -31,10 +31,14 @@ export default function HashGenerator() {
       </div>
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label
+            htmlFor="hash-input"
+            className="block text-sm font-medium text-gray-700 mb-2"
+          >
             Input
           </label>
           <Textarea
+            id="hash-input"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             rows={3}
@@ -43,10 +47,14 @@ export default function HashGenerator() {
           />
         </div>
         <div className="flex items-center gap-3">
-          <label className="text-sm font-medium text-gray-700">
+          <label
+            htmlFor="hash-algorithm"
+            className="text-sm font-medium text-gray-700"
+          >
             Algorithm:
           </label>
           <Select
+            id="hash-algorithm"
             value={algorithm}
             onChange={(e) => setAlgorithm(e.target.value)}
             className="w-auto"
@@ -67,10 +75,14 @@ export default function HashGenerator() {
         </div>
         {useHmac && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="hash-secret"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Secret Key
             </label>
             <Input
+              id="hash-secret"
               type="text"
               className="input mb-2"
               value={secret}
@@ -83,11 +95,15 @@ export default function HashGenerator() {
           <Button onClick={handleGenerate}>Generate</Button>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label
+            htmlFor="hash-result"
+            className="block text-sm font-medium text-gray-700 mb-2"
+          >
             Result
           </label>
           <div className="relative">
             <Textarea
+              id="hash-result"
               value={result}
               readOnly
               rows={2}

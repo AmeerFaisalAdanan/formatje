@@ -27,7 +27,7 @@ A modern, client-side web app that formats and compares JSON, XML, and GraphQL t
 - **Perfect for API development** and documentation
 
 ### 🚀 Modern UI/UX
-- **Tab-based navigation** between Formatter, Compare, and JSON to cURL tools
+- **Tab-based navigation** between Formatter, Compare, JSON to cURL, and Hash Generator tools
 - **Gradient purple background** with card-based layout
 - **Responsive design** that works on mobile and desktop
 - **Loading states** with emoji indicators
@@ -55,7 +55,7 @@ A modern, client-side web app that formats and compares JSON, XML, and GraphQL t
 #### Using Docker Compose:
 ```bash
 # Clone repository for docker-compose file
-git clone https://github.com/AamirFaisal-Adanan/formatje.git
+git clone https://github.com/AmeerFaisalAdanan/formatje.git
 cd formatje
 
 # Run with docker-compose
@@ -66,8 +66,8 @@ docker-compose up -d
 
 #### Using Docker directly:
 ```bash
-docker pull ghcr.io/aamirfaisaladanan/formatje:latest
-docker run -p 9111:8080 ghcr.io/aamirfaisaladanan/formatje:latest
+docker pull ghcr.io/ameerfaisaladanan/formatje:latest
+docker run -p 9111:8080 ghcr.io/ameerfaisaladanan/formatje:latest
 
 # Access the app at http://localhost:9111
 ```
@@ -79,7 +79,7 @@ docker run -p 9111:8080 ghcr.io/aamirfaisaladanan/formatje:latest
 Clone the repository to build and develop:
 
 ```bash
-git clone https://github.com/AamirFaisal-Adanan/formatje.git
+git clone https://github.com/AmeerFaisalAdanan/formatje.git
 cd formatje
 npm install
 ```
@@ -137,16 +137,21 @@ The Docker image includes enterprise-grade features:
 
 See [SECURITY.md](SECURITY.md) for comprehensive security documentation.
 
-### Push to GitHub Container Registry
+### Publishing to GitHub Container Registry
 
-Build and push your own image:
+Images are published **automatically**: every merge to `master` (and every
+`v*` tag) runs the [Release workflow](.github/workflows/release.yml), which
+lints, tests, builds, scans the image with Trivy, and pushes it to
+`ghcr.io/ameerfaisaladanan/formatje` with `latest`, `sha-<short>`, and
+semver tags. No personal access token or manual push is needed.
+
+To deploy the newest image on your host:
 ```bash
-# Authenticate with GitHub
-docker login ghcr.io -u YOUR_USERNAME -p YOUR_GITHUB_TOKEN
-
-# Build and push
-./build-and-push.sh
+docker compose pull && docker compose up -d
 ```
+
+For reproducible, rollback-able deploys, pin a `sha-*` or semver tag in
+`docker-compose.yml` instead of `:latest`.
 
 ## 📁 Project Structure
 - `/src/components/` - React UI components
@@ -156,7 +161,8 @@ docker login ghcr.io -u YOUR_USERNAME -p YOUR_GITHUB_TOKEN
 - `/src/utils/` - Core utilities
   - `formatters.js` - JSON/XML/GraphQL formatting logic
   - `diffUtils.js` - Text comparison logic
-- `/docker/` - Docker configuration
+  - `__tests__/` - Vitest unit tests
+- `Dockerfile` / `nginx.conf` / `docker-compose*.yml` - Container configuration
 - `/dist/` - Built production files
 
 ## 🔧 Tech Stack
