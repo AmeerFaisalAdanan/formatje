@@ -3,7 +3,7 @@ import * as React from "react";
 export const Button = React.forwardRef(
   (
     { className = "", variant = "primary", size = "default", ...props },
-    ref,
+    ref
   ) => {
     const baseStyles = "btn";
     const variantStyles =
@@ -17,6 +17,6 @@ export const Button = React.forwardRef(
         {...props}
       />
     );
-  },
+  }
 );
 Button.displayName = "Button";
