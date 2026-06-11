@@ -1,11 +1,40 @@
-import React, { useState } from "react";
-import { FormatterSection } from "./components/FormatterSection";
-import { CompareSection } from "./components/CompareSection";
-import { JsonToCurlSection } from "./components/JsonToCurlSection";
-import HashGenerator from "./components/HashGenerator";
+import React, { lazy, Suspense, useState } from "react";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+
+// Each tool loads its own chunk on demand so heavy editor/highlighter
+// dependencies are only fetched for the active tab.
+const FormatterSection = lazy(() =>
+  import("./components/FormatterSection").then((m) => ({
+    default: m.FormatterSection,
+  }))
+);
+const CompareSection = lazy(() =>
+  import("./components/CompareSection").then((m) => ({
+    default: m.CompareSection,
+  }))
+);
+const JsonToCurlSection = lazy(() =>
+  import("./components/JsonToCurlSection").then((m) => ({
+    default: m.JsonToCurlSection,
+  }))
+);
+const HashGenerator = lazy(() =>
+  import("./components/HashGenerator").then((m) => ({
+    default: m.HashGenerator,
+  }))
+);
+
+const TABS = [
+  { id: "formatter", label: "🎨 Formatter", Component: FormatterSection },
+  { id: "compare", label: "🔍 Compare", Component: CompareSection },
+  { id: "curl", label: "🌀 JSON to cURL", Component: JsonToCurlSection },
+  { id: "hash", label: "🔑 Hash Generator", Component: HashGenerator },
+];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState("formatter");
+  const [activeTab, setActiveTab] = useState(TABS[0].id);
+  const { Component: ActiveSection } =
+    TABS.find((tab) => tab.id === activeTab) ?? TABS[0];
 
   return (
     <div className="min-h-screen py-8 px-4">
@@ -20,42 +49,29 @@ export default function App() {
         </header>
 
         <div className="tab-nav justify-center">
-          <button
-            className={`tab-btn ${activeTab === "formatter" ? "active" : ""}`}
-            onClick={() => setActiveTab("formatter")}
-          >
-            🎨 Formatter
-          </button>
-          <button
-            className={`tab-btn ${activeTab === "compare" ? "active" : ""}`}
-            onClick={() => setActiveTab("compare")}
-          >
-            🔍 Compare
-          </button>
-          <button
-            className={`tab-btn ${activeTab === "curl" ? "active" : ""}`}
-            onClick={() => setActiveTab("curl")}
-          >
-            🌀 JSON to cURL
-          </button>
-          <button
-            className={`tab-btn ${activeTab === "hash" ? "active" : ""}`}
-            onClick={() => setActiveTab("hash")}
-          >
-            🔑 Hash Generator
-          </button>
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              className={`tab-btn ${activeTab === tab.id ? "active" : ""}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         <div className="max-w-4xl mx-auto">
-          {activeTab === "formatter" ? (
-            <FormatterSection />
-          ) : activeTab === "compare" ? (
-            <CompareSection />
-          ) : activeTab === "curl" ? (
-            <JsonToCurlSection />
-          ) : (
-            <HashGenerator />
-          )}
+          <ErrorBoundary key={activeTab}>
+            <Suspense
+              fallback={
+                <section className="card text-center text-gray-500">
+                  Loading…
+                </section>
+              }
+            >
+              <ActiveSection />
+            </Suspense>
+          </ErrorBoundary>
         </div>
       </div>
     </div>

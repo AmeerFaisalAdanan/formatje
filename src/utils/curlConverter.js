@@ -47,36 +47,6 @@ const validateRequestData = (data) => {
 };
 
 /**
- * Unused helper functions - kept for potential future use
- *
- * Converts headers object to cURL -H flags
- * @param {Object} headers - Headers object
- * @returns {string} cURL header flags
- */
-// const buildHeaderFlags = (headers) => {
-//   if (!headers || typeof headers !== 'object' || Array.isArray(headers)) {
-//     return '';
-//   }
-//
-//   return Object.entries(headers)
-//     .filter(([key, value]) => key && value !== undefined && value !== null)
-//     .map(([key, value]) => ` -H ${escapeShellArg(`${key}: ${String(value)}`)}`)
-//     .join('');
-// };
-
-/**
- * Converts body to cURL -d flag
- * @param {Object|string} body - Request body
- * @returns {string} cURL data flag
- */
-// const buildBodyFlag = (body) => {
-//   if (!body) return '';
-//
-//   const bodyString = typeof body === 'string' ? body : JSON.stringify(body);
-//   return ` -d ${escapeShellArg(bodyString)}`;
-// };
-
-/**
  * Masks sensitive values in a string (like tokens)
  * @param {string} value - The value to potentially mask
  * @param {string} key - The header key to check if masking is needed

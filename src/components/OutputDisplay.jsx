@@ -1,14 +1,10 @@
-import React, { useState } from "react";
+import React from "react";
 import Editor from "@monaco-editor/react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
+import { useCopyFeedback } from "../hooks/useCopyFeedback";
 
 export function OutputDisplay({ value }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const [copied, handleCopy] = useCopyFeedback();
 
   // Detect language based on content
   const getLanguage = () => {

@@ -6,13 +6,14 @@ import { convertJsonToCurl, exampleJsonSchemas } from "../utils/curlConverter";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { useCopyFeedback } from "../hooks/useCopyFeedback";
 
 export function JsonToCurlSection() {
   const [input, setInput] = useState("");
   const [output, setOutput] = useState({ full: "", masked: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copied, handleCopy] = useCopyFeedback();
   const [curlOptions, setCurlOptions] = useState({
     verbose: false,
     insecure: false,
@@ -37,11 +38,6 @@ export function JsonToCurlSection() {
 
   const toggleOption = (option) => {
     setCurlOptions((prev) => ({ ...prev, [option]: !prev[option] }));
-  };
-
-  const handleCopy = () => {
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   const insertExample = (key) => {
