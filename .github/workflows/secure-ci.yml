@@ -2,8 +2,11 @@
 #
 # Enforces quality, security, and supply chain integrity for the app.
 #
-# Triggers: pull requests targeting master and pushes to master, so the
-# branch that ships is always covered.
+# Triggers: pull requests targeting master only - this is the pre-merge
+# gate. It deliberately does NOT also run on push to master: release.yml
+# owns that path (its own verify job re-runs lint/test/build, and its
+# own Trivy step re-scans the image before publish/deploy), so running
+# this workflow again on the same push would just duplicate that work.
 # Jobs:
 #   1. Quality & Linting (eslint, prettier, vitest, build)
 #   2. Containerization & Security (Trivy, CodeQL, Hadolint)
@@ -16,9 +19,6 @@
 name: Secure CI Pipeline
 
 on:
-  push:
-    branches:
-      - master
   pull_request:
     branches:
       - master
