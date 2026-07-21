@@ -48,6 +48,9 @@ COPY --from=builder --chown=101:101 /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 RUN chmod 644 /etc/nginx/conf.d/default.conf && \
+    # Pull latest Alpine security patches - the base image digest is pinned,
+    # so upstream package fixes only land here, not by re-pulling the tag
+    apk upgrade --no-cache && \
     # Remove unnecessary packages (OWASP: Minimize Attack Surface)
     apk del apk-tools && \
     # Make root filesystem read-only where possible
