@@ -80,6 +80,12 @@ describe("convertJsonToCurl", () => {
     );
   });
 
+  it("rejects a malformed url", () => {
+    expect(() =>
+      convertJsonToCurl(JSON.stringify({ url: "not a url" }))
+    ).toThrow(/Invalid URL/);
+  });
+
   it("rejects array headers", () => {
     expect(() =>
       convertJsonToCurl(

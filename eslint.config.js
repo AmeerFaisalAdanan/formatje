@@ -25,6 +25,7 @@ export default [
         navigator: "readonly",
         setTimeout: "readonly",
         clearTimeout: "readonly",
+        URL: "readonly",
         JSX: true,
       },
     },
