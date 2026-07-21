@@ -2,7 +2,10 @@
 # deploy it to Azure Container Apps.
 #
 # Every merge to master (and every v* tag) publishes a scanned, versioned
-# image to ghcr.io using the built-in GITHUB_TOKEN — no personal PAT needed.
+# image to ghcr.io using the GH_TOKS PAT secret (package-write scope).
+# The built-in GITHUB_TOKEN can't be used here: this repo's
+# default_workflow_permissions is set to read-only, which caps GITHUB_TOKEN
+# regardless of the packages: write declared below.
 #
 # Tags published:
 #   latest      - on pushes to master
@@ -88,7 +91,10 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          # GITHUB_TOKEN's write:packages grant is capped by the repo's
+          # default_workflow_permissions setting (currently read-only), so
+          # use the existing PAT that already has package-write instead.
+          password: ${{ secrets.GH_TOKS }}
 
       - name: Extract image metadata
         id: meta
