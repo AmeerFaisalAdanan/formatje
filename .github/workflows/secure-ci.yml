@@ -160,4 +160,8 @@ jobs:
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKS }}
+          # Dependabot-triggered runs don't get access to custom repo
+          # secrets (GH_TOKS resolves empty there), but GITHUB_TOKEN is
+          # always provided regardless of trigger - gitleaks only needs
+          # read access to fetch the PR's commit range.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
