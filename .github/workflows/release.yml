@@ -1,9 +1,8 @@
-# Release: build, scan, and publish the container image to GHCR.
+# Release: build, scan, and publish the container image to GHCR, then
+# deploy it to Azure Container Apps.
 #
 # Every merge to master (and every v* tag) publishes a scanned, versioned
 # image to ghcr.io using the built-in GITHUB_TOKEN — no personal PAT needed.
-# Deployment to the host stays manual:
-#   docker compose pull && docker compose up -d
 #
 # Tags published:
 #   latest      - on pushes to master
@@ -12,6 +11,13 @@
 #
 # The Trivy scan gates the push: the image is built locally first and only
 # pushed if no CRITICAL/HIGH vulnerabilities are found.
+#
+# On pushes to master (not tags), the just-published sha-<short> image is
+# then deployed to Azure Container Apps via OIDC federated login (no
+# standing Azure secret) — see deploy-azure job below. Auth is scoped by
+# an Azure AD federated credential trusting only
+# repo:<owner>/<repo>:ref:refs/heads/master, so tag-triggered runs can't
+# use it, which is why that job is gated to the master branch.
 
 name: Release
 
@@ -124,3 +130,56 @@ jobs:
           provenance: true
           sbom: true
           cache-from: type=gha
+
+  deploy-azure:
+    name: Deploy to Azure Container Apps
+    needs: build-publish
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Azure login (OIDC)
+        uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 # v3.0.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy image to Container App
+        run: |
+          az extension add --name containerapp --upgrade --yes -o none
+
+          # ghcr.io image paths must be lowercase; github.repository isn't.
+          repo_lc=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          image="ghcr.io/${repo_lc}:sha-${GITHUB_SHA:0:7}"
+          echo "Deploying $image"
+
+          az containerapp update \
+            --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --image "$image"
+
+      - name: Verify deployment health
+        run: |
+          fqdn=$(az containerapp show \
+            --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --query properties.configuration.ingress.fqdn -o tsv)
+          echo "Checking https://$fqdn"
+          for i in $(seq 1 10); do
+            if curl -fsS "https://$fqdn" -o /dev/null; then
+              echo "Health check passed"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 5s..."
+            sleep 5
+          done
+          echo "Health check failed after retries"
+          exit 1
+
+      - name: Azure logout
+        if: always()
+        run: az logout
