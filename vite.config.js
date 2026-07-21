@@ -11,15 +11,29 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'prettier-core': ['prettier/standalone'],
-          'prettier-plugins': [
-            'prettier/plugins/babel',
-            'prettier/plugins/estree', 
-            'prettier/plugins/graphql'
-          ],
-          'utils': ['xml-formatter', 'diff', 'react-copy-to-clipboard'],
+        // Rolldown (Vite 8's default bundler) only accepts manualChunks as
+        // a function - the object form Rollup supported is no longer valid.
+        manualChunks(id) {
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+            return 'react-vendor';
+          }
+          if (id.includes('node_modules/prettier/standalone')) {
+            return 'prettier-core';
+          }
+          if (
+            id.includes('node_modules/prettier/plugins/babel') ||
+            id.includes('node_modules/prettier/plugins/estree') ||
+            id.includes('node_modules/prettier/plugins/graphql')
+          ) {
+            return 'prettier-plugins';
+          }
+          if (
+            id.includes('node_modules/xml-formatter') ||
+            id.includes('node_modules/diff') ||
+            id.includes('node_modules/react-copy-to-clipboard')
+          ) {
+            return 'utils';
+          }
         },
       },
     },
