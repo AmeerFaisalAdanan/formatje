@@ -3,7 +3,7 @@
 # https://owasp.org/www-project-docker-top-10/
 
 # --- Stage 1: Builder ---
-FROM node:22-alpine@sha256:9385cd9f3001dfc3431e8ead12c43e9e1f87cc1b9b5c6cfd0f73865d405b27c4 AS builder
+FROM node:26-alpine@sha256:e88a35be04478413b7c71c455cd9865de9b9360e1f43456be5951032d7ac1a66 AS builder
 LABEL stage=builder
 WORKDIR /app
 
